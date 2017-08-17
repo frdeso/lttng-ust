@@ -1025,3 +1025,27 @@ _TP_COMBINE_TOKENS(__lttng_events_exit__, TRACEPOINT_PROVIDER)(void)
 }
 
 int _TP_COMBINE_TOKENS(__tracepoint_provider_, TRACEPOINT_PROVIDER);
+
+/*
+ * Stage 10 of tracepoint event generation.
+ *
+ * Add tracepoint description to note elf section of the binary.
+ */
+
+#include <lttng/ust-tracepoint-event-reset.h>
+
+#undef TRACEPOINT_EVENT
+#define TRACEPOINT_EVENT(_provider, _name, _args, _field)	\
+	asm(".pushsection .note.lttngust.desc, \"?\", \"note\";" \
+	".balign 4;" \
+	".long 1221f - 1220f;" \
+	".long 1223f - 1222f;" \
+	".long 4;" \
+	"1220:	.asciz \"LTTng-UST\";" \
+	"1221:	.balign 4;" \
+	"1222: .asciz \"" #_provider "\";" \
+	".asciz \"" #_name "\";" \
+	"1223:	.balign 4;" \
+	".popsection;"); \
+
+#include TRACEPOINT_INCLUDE
