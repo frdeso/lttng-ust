@@ -38,6 +38,7 @@
  */
 
 #define _LGPL_SOURCE
+#include <fcntl.h>
 #include <stdint.h>
 #include <unistd.h>
 
@@ -346,11 +347,24 @@ static
 int lttng_abi_event_notifier_send_fd(void *owner, int event_notifier_notif_fd)
 {
 	struct lttng_event_notifier_group *event_notifier_group;
-	int event_notifier_group_objd, ret;
+	int event_notifier_group_objd, ret, fd_flag, close_ret;
 
 	event_notifier_group = lttng_event_notifier_group_create();
 	if (!event_notifier_group)
 		return -ENOMEM;
+
+	/*
+	 * Set this file descriptor as NON-BLOCKING.
+	 */
+	fd_flag = fcntl(event_notifier_notif_fd, F_GETFL);
+
+	fd_flag |= O_NONBLOCK;
+
+	ret = fcntl(event_notifier_notif_fd, F_SETFL, fd_flag);
+	if (ret) {
+		ret = -errno;
+		goto fd_error;
+	}
 
 	event_notifier_group_objd = objd_alloc(event_notifier_group,
 		&lttng_event_notifier_group_ops, owner, "event_notifier_group");
@@ -367,6 +381,12 @@ int lttng_abi_event_notifier_send_fd(void *owner, int event_notifier_notif_fd)
 
 objd_error:
 	lttng_event_notifier_group_destroy(event_notifier_group);
+fd_error:
+	close_ret = close(event_notifier_notif_fd);
+	if (close_ret) {
+		PERROR("close");
+	}
+
 	return ret;
 }
 
@@ -652,7 +672,7 @@ static int lttng_ust_event_notifier_enabler_create(int event_notifier_group_obj,
 		void *owner, struct lttng_ust_event_notifier *event_notifier_param,
 		enum lttng_enabler_format_type type)
 {
-	struct lttng_event_notifier_group *group_handle =
+	struct lttng_event_notifier_group *event_notifier_group =
 		objd_private(event_notifier_group_obj);
 	struct lttng_event_notifier_enabler *event_notifier_enabler;
 	int event_notifier_objd, ret;
@@ -665,7 +685,8 @@ static int lttng_ust_event_notifier_enabler_create(int event_notifier_group_obj,
 		goto objd_error;
 	}
 
-	event_notifier_enabler = lttng_event_notifier_enabler_create(group_handle, type, event_notifier_param);
+	event_notifier_enabler = lttng_event_notifier_enabler_create(
+		event_notifier_group, type, event_notifier_param);
 	if (!event_notifier_enabler) {
 		ret = -ENOMEM;
 		goto event_notifier_error;

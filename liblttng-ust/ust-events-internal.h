@@ -223,4 +223,15 @@ int lttng_event_notifier_enabler_attach_exclusion(
 		struct lttng_event_notifier_enabler *event_notifier_enabler,
 		struct lttng_ust_excluder_node *excluder);
 
+LTTNG_HIDDEN
+void lttng_free_event_notifier_filter_runtime(
+		struct lttng_event_notifier *event_notifier);
+
+/*
+ * Connect the probe on all enablers matching this event description.
+ * Called on library load.
+ */
+LTTNG_HIDDEN
+int lttng_fix_pending_event_notifiers(void);
+
 #endif /* _LTTNG_UST_EVENTS_INTERNAL_H */

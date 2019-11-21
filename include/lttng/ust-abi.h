@@ -126,6 +126,12 @@ struct lttng_ust_event_notifier {
 	char padding[LTTNG_UST_EVENT_NOTIFIER_PADDING1];
 } LTTNG_PACKED;
 
+#define LTTNG_EVENT_NOTIFIER_NOTIFICATION_PADDING 32
+struct lttng_ust_event_notifier_notification {
+	uint64_t token;
+	char padding[LTTNG_EVENT_NOTIFIER_NOTIFICATION_PADDING];
+} LTTNG_PACKED;
+
 enum lttng_ust_field_type {
 	LTTNG_UST_FIELD_OTHER			= 0,
 	LTTNG_UST_FIELD_INTEGER			= 1,
